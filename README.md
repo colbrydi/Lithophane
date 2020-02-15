@@ -1,4 +1,4 @@
-# Python Lithophane Ggenerator
+# Python Lithophane Generator
 
 written by Dirk Colbry
 
