@@ -55,7 +55,7 @@ def jpg2stl(im='', width='', h=3.0, d=0.5, show=True):
     
     """
     depth = h
-    offsert = d
+    offset = d
     
     if type(im) == str:
         filename=im
