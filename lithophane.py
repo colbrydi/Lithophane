@@ -82,7 +82,7 @@ def jpg2stl(im='', width='', h=3.0, d=0.5, show=True):
     g = np.ones([gray.shape[0]+2, gray.shape[1]+2])
     g[1:-1,1:-1] = gray
 
-    #g = np.fliplr(g)
+    g = np.fliplr(g)
     if(show):
         plt.imshow(g, cmap = plt.get_cmap('gray'))
     
@@ -95,7 +95,7 @@ def jpg2stl(im='', width='', h=3.0, d=0.5, show=True):
     #scale z matrix to desired max depth and add base height
     z = ngray * depth + offset; 
     
-    x1 = np.fliplr(np.linspace(1, z.shape[1]/10, z.shape[1]))
+    x1 = np.linspace(1, z.shape[1]/10, z.shape[1])
     y1 = np.linspace(1, z.shape[0]/10, z.shape[0]) 
     
     x, y = np.meshgrid(x1, y1);
