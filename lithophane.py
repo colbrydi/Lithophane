@@ -48,7 +48,7 @@ def scaleim(im, width_mm = 40):
     return im
 
 
-def jpg2stl(im='', width='', depth=3.0, show=True):
+def jpg2stl(im='', width='', depth=3.0, offset=0.5, show=True):
     """Function to convert filename to stl with width = width
     
     :width: - Required parameter.  Width
@@ -91,9 +91,9 @@ def jpg2stl(im='', width='', depth=3.0, show=True):
     ngray = 1 - np.double(g);
 
     #scale z matrix to desired max depth and add base height
-    z = ngray * depth + 0.5; 
+    z = ngray * depth + offset; 
     
-    x1 = np.linspace(1, z.shape[1]/10, z.shape[1])
+    x1 = np.linspace(z.shape[1], z.shape[1]/10, 1)
     y1 = np.linspace(1, z.shape[0]/10, z.shape[0]) 
     
     x, y = np.meshgrid(x1, y1);
