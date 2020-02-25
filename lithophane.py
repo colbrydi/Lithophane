@@ -48,12 +48,14 @@ def scaleim(im, width_mm = 40):
     return im
 
 
-def jpg2stl(im='', width='', depth=3.0, show=True):
+def jpg2stl(im='', width='', h=3.0, d=0.5, show=True):
     """Function to convert filename to stl with width = width
     
     :width: - Required parameter.  Width
     
     """
+    depth = h
+    offset = d
     
     if type(im) == str:
         filename=im
@@ -80,7 +82,7 @@ def jpg2stl(im='', width='', depth=3.0, show=True):
     g = np.ones([gray.shape[0]+2, gray.shape[1]+2])
     g[1:-1,1:-1] = gray
 
-    #g = np.fliplr(g)
+    g = np.fliplr(g)
     if(show):
         plt.imshow(g, cmap = plt.get_cmap('gray'))
     
@@ -91,7 +93,7 @@ def jpg2stl(im='', width='', depth=3.0, show=True):
     ngray = 1 - np.double(g);
 
     #scale z matrix to desired max depth and add base height
-    z = ngray * depth + 0.5; 
+    z = ngray * depth + offset; 
     
     x1 = np.linspace(1, z.shape[1]/10, z.shape[1])
     y1 = np.linspace(1, z.shape[0]/10, z.shape[0]) 
