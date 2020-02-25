@@ -8,7 +8,8 @@ files written by Rick van Hattem.
 
 import matplotlib.image as img
 import matplotlib.pyplot as plt
-import os, sys
+import os
+import sys
 #from PIL import Image
 from skimage.transform import resize
 
@@ -19,30 +20,32 @@ from matplotlib import pyplot
 
 from stl import mesh
 
+
 def rgb2gray(rgb):
     """Convert rgb image to grayscale image in range 0-1
-    
+
     >>> gray = factorial(rgbimg)
-    
+
     """
-    r, g, b = rgb[:,:,0], rgb[:,:,1], rgb[:,:,2]
+    r, g, b = rgb[:, :, 0], rgb[:, :, 1], rgb[:, :, 2]
     gray = 0.2989 * r + 0.5870 * g + 0.1140 * b
     return gray
 
-def scaleim(im, width_mm = 40):
+
+def scaleim(im, width_mm=40):
     """Scale image to 0.1 pixel width
     For example the following:
-    
+
     >>> im_scaled = scaleim(im, width_mm = 100)
-    
+
     Will make an image with 1000 pixels wide.
     The height will be scale proportionally
     """
-    
-    ydim=im.shape[0];
-    xdim=im.shape[1];
-    
-    scale=(width_mm*10/xdim);
+
+    ydim = im.shape[0]
+    xdim = im.shape[1]
+
+    scale = (width_mm*10/xdim)
     newshape = (int(ydim*scale), int(xdim*scale), 3)
     im = resize(im, newshape)
     return im
@@ -50,26 +53,26 @@ def scaleim(im, width_mm = 40):
 
 def jpg2stl(im='', width='', h=3.0, d=0.5, show=True):
     """Function to convert filename to stl with width = width
-    
+
     :width: - Required parameter.  Width
-    
+
     """
     depth = h
     offset = d
-    
+
     if type(im) == str:
-        filename=im
+        filename = im
         print(f"Reading {filename}")
         im = img.imread(filename)
     else:
-        filenmae='image.xxx'
+        filenmae = 'image.xxx'
 
-    if width=='':
-        width=im.shape[1]
+    if width == '':
+        width = im.shape[1]
 
-    #TODO: Width is actually height
+    # TODO: Width is actually height
     im = scaleim(im, width_mm=width)
-    
+
     im = im/np.max(im)
 
     # Convert to grayscale
@@ -77,49 +80,51 @@ def jpg2stl(im='', width='', h=3.0, d=0.5, show=True):
         gray = rgb2gray(im)
     else:
         gray = im
-    
-    #add border of zeros to help with back.
+
+    # add border of zeros to help with back.
     g = np.ones([gray.shape[0]+2, gray.shape[1]+2])
-    g[1:-1,1:-1] = gray
+    g[1:-1, 1:-1] = gray
 
     #g = np.fliplr(g)
     if(show):
-        plt.imshow(g, cmap = plt.get_cmap('gray'))
-    
-    #print(np.max(g))
-    #print(g.shape)
-   
-    #Invert threshold for z matrix
-    ngray = 1 - np.double(g);
+        plt.imshow(g, cmap=plt.get_cmap('gray'))
 
-    #scale z matrix to desired max depth and add base height
-    z = ngray * depth + offset; 
-    
+    # print(np.max(g))
+    # print(g.shape)
+
+    # Invert threshold for z matrix
+    ngray = 1 - np.double(g)
+
+    # scale z matrix to desired max depth and add base height
+    z = ngray * depth + offset
+
     x1 = np.linspace(1, z.shape[1]/10, z.shape[1])
-    y1 = np.linspace(1, z.shape[0]/10, z.shape[0]) 
-    
-    x, y = np.meshgrid(x1, y1);
-    
-    x = np.fliplr(x)
-    
-    return x,y,z
+    y1 = np.linspace(1, z.shape[0]/10, z.shape[0])
 
-    
-def makeCylinder(x,y,z):
+    x, y = np.meshgrid(x1, y1)
+
+    x = np.fliplr(x)
+
+    return x, y, z
+
+
+def makeCylinder(x, y, z):
     '''Convert flat point cloud to Cylinder'''
     newx = x.copy()
     newz = z.copy()
     radius = (np.max(x)-np.min(x))/(2*np.pi)
     print(f"Cylinder Radius {radius}mm")
-    for r in range(0,x.shape[0]):
-        for c in range(0,x.shape[1]):
+    for r in range(0, x.shape[0]):
+        for c in range(0, x.shape[1]):
             t = (c/(x.shape[1]-10))*2*np.pi
-            rad = radius + z[r,c]
-            newx[r,c] = rad*np.cos(t)
-            newz[r,c] = rad*np.sin(t)
+            rad = radius + z[r, c]
+            newx[r, c] = rad*np.cos(t)
+            newz[r, c] = rad*np.sin(t)
     return newx, y.copy(), newz
 
-#Construct polygons from grid data
+# Construct polygons from grid data
+
+
 def makemesh(x, y, z):
     '''Convert point cloud grid to mesh'''
     count = 0
@@ -127,41 +132,41 @@ def makemesh(x, y, z):
     triangles = []
     for i in range(z.shape[0]-1):
         for j in range(z.shape[1]-1):
-            
-            # Triangle 1   
+
+            # Triangle 1
             points.append([x[i][j], y[i][j], z[i][j]])
             points.append([x[i][j+1], y[i][j+1], z[i][j+1]])
             points.append([x[i+1][j], y[i+1][j], z[i+1][j]])
-            
-            triangles.append([count, count+1, count+2] )
-                                    
-            # Triangle 2            
+
+            triangles.append([count, count+1, count+2])
+
+            # Triangle 2
             points.append([x[i][j+1], y[i][j+1], z[i][j+1]])
             points.append([x[i+1][j+1], y[i+1][j+1], z[i+1][j+1]])
             points.append([x[i+1][j], y[i+1][j], z[i+1][j]])
-            
-            triangles.append([count+3, count+4, count+5] )
-            
+
+            triangles.append([count+3, count+4, count+5])
+
             count += 6
 
-    #BACK
+    # BACK
     for j in range(x.shape[1]-1):
-            
+
         bot = x.shape[0]-1
-        
-        # Back Triangle 1   
+
+        # Back Triangle 1
         points.append([x[bot][j], y[bot][j], z[bot][j]])
         points.append([x[0][j+1], y[0][j+1], z[0][j+1]])
         points.append([x[0][j],   y[0][j],   z[0][j]])
 
-        triangles.append([count, count+1, count+2] )
+        triangles.append([count, count+1, count+2])
 
-        # Triangle 2  
+        # Triangle 2
         points.append([x[bot][j], y[bot][j], z[bot][j]])
         points.append([x[bot][j+1], y[bot][j+1], z[bot][j+1]])
         points.append([x[0][j+1], y[0][j+1], z[0][j+1]])
 
-        triangles.append([count+3, count+4, count+5] )
+        triangles.append([count+3, count+4, count+5])
 
         count += 6
 
@@ -174,7 +179,7 @@ def makemesh(x, y, z):
     return model
 
 
-def showstl(x,y,z):
+def showstl(x, y, z):
     '''
     ======================
     3D surface (color map)
@@ -193,7 +198,6 @@ def showstl(x,y,z):
     from matplotlib.ticker import LinearLocator, FormatStrFormatter
     import numpy as np
 
-
     fig = plt.figure()
     ax = fig.gca(projection='3d')
 
@@ -201,8 +205,9 @@ def showstl(x,y,z):
     surf = ax.plot_surface(x, y, z, cmap=cm.coolwarm,
                            linewidth=0, antialiased=False)
 
-    #plt.axis('equal')
-    
+    # plt.axis('equal')
+
+
 if __name__ == "__main__":
     import sys
     jpg2stl(sys.argv[2])
