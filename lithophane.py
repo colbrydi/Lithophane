@@ -81,22 +81,23 @@ def jpg2stl(im='', width='', h=3.0, d=0.5, show=True):
     else:
         gray = im
 
-    # add border of zeros to help with back.
-    g = np.ones([gray.shape[0]+2, gray.shape[1]+2])
-    g[1:-1, 1:-1] = gray
-
     #g = np.fliplr(g)
     if(show):
-        plt.imshow(g, cmap=plt.get_cmap('gray'))
+        plt.imshow(gray, cmap=plt.get_cmap('gray'))
 
     # print(np.max(g))
     # print(g.shape)
 
     # Invert threshold for z matrix
-    ngray = 1 - np.double(g)
+    ngray = 1 - np.double(gray)
 
     # scale z matrix to desired max depth and add base height
-    z = ngray * depth + offset
+    z_middle = ngray * depth + offset
+    
+    # add border of zeros to help with back.
+    z = np.zeros([z_middle.shape[0]+2, z_middle.shape[1]+2])
+    z[1:-1, 1:-1] = z_middle
+
 
     x1 = np.linspace(1, z.shape[1]/10, z.shape[1])
     y1 = np.linspace(1, z.shape[0]/10, z.shape[0])
