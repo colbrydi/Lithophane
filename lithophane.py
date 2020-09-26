@@ -93,11 +93,10 @@ def jpg2stl(im='', width='', h=3.0, d=0.5, show=True):
 
     # scale z matrix to desired max depth and add base height
     z_middle = ngray * depth + offset
-    
+
     # add border of zeros to help with back.
     z = np.zeros([z_middle.shape[0]+2, z_middle.shape[1]+2])
     z[1:-1, 1:-1] = z_middle
-
 
     x1 = np.linspace(1, z.shape[1]/10, z.shape[1])
     y1 = np.linspace(1, z.shape[0]/10, z.shape[0])
@@ -170,6 +169,88 @@ def makemesh(x, y, z):
         triangles.append([count+3, count+4, count+5])
 
         count += 6
+
+    # Create the mesh
+    model = mesh.Mesh(np.zeros(len(triangles), dtype=mesh.Mesh.dtype))
+    for i, f in enumerate(triangles):
+        for j in range(3):
+            model.vectors[i][j] = points[f[j]]
+
+    return model
+
+
+def makeSphere(x, y, z, radius=None, bottom_radian=0.85):
+    '''Convert flat point cloud to Sphere'''
+    front_x = x.copy()
+    front_y = y.copy()
+    front_z = z.copy()
+    back_x = x.copy()
+    back_y = y.copy()
+    back_z = z.copy()
+    if radius is None or type(radius) not in [float, int]:
+        radius = (np.max(x)-np.min(x))/(2*np.pi)
+    print(f"Cylinder Radius {radius}mm")
+    for r in range(0, x.shape[0]):
+        p = np.min([float(r)/x.shape[0], bottom_radian])*np.pi
+        for c in range(0, x.shape[1]):
+            t = (c/(x.shape[1]-10))*2*np.pi
+            rad = radius + z[r, c]
+            front_x[r, c] = rad*np.cos(t)*np.sin(p)
+            front_y[r, c] = rad*np.cos(p)
+            front_z[r, c] = rad*np.sin(t)*np.sin(p)
+            back_x[r, c] = radius*np.cos(t)*np.sin(p)
+            back_y[r, c] = radius*np.cos(p)
+            back_z[r, c] = radius*np.sin(t)*np.sin(p)
+    return (front_x, front_y, front_z), (back_x, back_y, back_z)
+
+
+def makeMeshSphere(front, back):
+    '''Convert point cloud grid to mesh'''
+    x, y, z = front
+    bx, by, bz = back
+    count = 0
+    points = []
+    triangles = []
+    for i in range(z.shape[0]-1):
+        for j in range(z.shape[1]-1):
+
+            # Triangle 1
+            points.append([x[i][j], y[i][j], z[i][j]])
+            points.append([x[i][j+1], y[i][j+1], z[i][j+1]])
+            points.append([x[i+1][j], y[i+1][j], z[i+1][j]])
+
+            triangles.append([count, count+1, count+2])
+
+            # Triangle 2
+            points.append([x[i][j+1], y[i][j+1], z[i][j+1]])
+            points.append([x[i+1][j+1], y[i+1][j+1], z[i+1][j+1]])
+            points.append([x[i+1][j], y[i+1][j], z[i+1][j]])
+
+            triangles.append([count+3, count+4, count+5])
+
+            count += 6
+
+    # BACK
+    for i in range(bz.shape[0]-1):
+        for j in range(bz.shape[1]-1):
+
+            # Triangle 1
+            points.append([bx[i+1][j], by[i+1][j], bz[i+1][j]])
+            points.append([bx[i][j+1], by[i][j+1], bz[i][j+1]])
+            points.append([bx[i][j], by[i][j], bz[i][j]])
+
+            triangles.append([count, count+1, count+2])
+
+            # Triangle 2
+            points.append([bx[i+1][j], by[i+1][j], bz[i+1][j]])
+            points.append([bx[i+1][j+1], by[i+1][j+1], bz[i+1][j+1]])
+            points.append([bx[i][j+1], by[i][j+1], bz[i][j+1]])
+
+            triangles.append([count+3, count+4, count+5])
+
+            count += 6
+
+    # TODO bottom
 
     # Create the mesh
     model = mesh.Mesh(np.zeros(len(triangles), dtype=mesh.Mesh.dtype))
