@@ -179,9 +179,9 @@ def makemesh(x, y, z):
     return model
 
 
-def makeSphere(x, y, z, radius=None, bottom_radian=0.85):
+def makeSphere(x, y, z, radius = 50, bottom_hole_radius = 10, thickness=2):
     '''Convert flat point cloud to Sphere'''
-    r_max = int(x.shape[0] * (1 - np.arccos(bottom_hole_radius / radius) / np.pi))
+    r_max = int(x.shape[0] * (1 - np.arcsin(bottom_hole_radius / radius) / np.pi))
     copy_target = slice(r_max)
     front_x = x[copy_target].copy()
     front_y = y[copy_target].copy()
