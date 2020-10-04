@@ -181,26 +181,26 @@ def makemesh(x, y, z):
 
 def makeSphere(x, y, z, radius=None, bottom_radian=0.85):
     '''Convert flat point cloud to Sphere'''
-    front_x = x.copy()
-    front_y = y.copy()
-    front_z = z.copy()
-    back_x = x.copy()
-    back_y = y.copy()
-    back_z = z.copy()
-    if radius is None or type(radius) not in [float, int]:
-        radius = (np.max(x)-np.min(x))/(2*np.pi)
-    print(f"Cylinder Radius {radius}mm")
-    for r in range(0, x.shape[0]):
-        p = np.min([float(r)/x.shape[0], bottom_radian])*np.pi
-        for c in range(0, x.shape[1]):
+    r_max = int(x.shape[0] * (1 - np.arccos(bottom_hole_radius / radius) / np.pi))
+    copy_target = slice(r_max)
+    front_x = x[copy_target].copy()
+    front_y = y[copy_target].copy()
+    front_z = z[copy_target].copy()
+    back_x = x[copy_target].copy()
+    back_y = y[copy_target].copy()
+    back_z = z[copy_target].copy()
+    for r in range(0, r_max):
+        p = float(r)/x.shape[0]*np.pi
+        for c in range(0, front_x.shape[1]):
             t = (c/(x.shape[1]-10))*2*np.pi
-            rad = radius + z[r, c]
-            front_x[r, c] = rad*np.cos(t)*np.sin(p)
-            front_y[r, c] = rad*np.cos(p)
-            front_z[r, c] = rad*np.sin(t)*np.sin(p)
-            back_x[r, c] = radius*np.cos(t)*np.sin(p)
-            back_y[r, c] = radius*np.cos(p)
-            back_z[r, c] = radius*np.sin(t)*np.sin(p)
+            external_radius = radius + z[r, c] if r < r_max - 1 else radius + thickness
+            internal_radius = radius
+            front_x[r, c] = external_radius*np.cos(t)*np.sin(p)
+            front_y[r, c] = external_radius*np.cos(p)
+            front_z[r, c] = external_radius*np.sin(t)*np.sin(p)
+            back_x[r, c] = internal_radius*np.cos(t)*np.sin(p)
+            back_y[r, c] = internal_radius*np.cos(p) if r < r_max - 1 else front_y[r, c]
+            back_z[r, c] = internal_radius*np.sin(t)*np.sin(p)
     return (front_x, front_y, front_z), (back_x, back_y, back_z)
 
 
@@ -211,8 +211,8 @@ def makeMeshSphere(front, back):
     count = 0
     points = []
     triangles = []
-    for i in range(z.shape[0]-1):
-        for j in range(z.shape[1]-1):
+    for i in range(x.shape[0]-1):
+        for j in range(x.shape[1]-1):
 
             # Triangle 1
             points.append([x[i][j], y[i][j], z[i][j]])
@@ -230,9 +230,9 @@ def makeMeshSphere(front, back):
 
             count += 6
 
-    # BACK
-    for i in range(bz.shape[0]-1):
-        for j in range(bz.shape[1]-1):
+    # Back
+    for i in range(bx.shape[0]-1):
+        for j in range(bx.shape[1]-1):
 
             # Triangle 1
             points.append([bx[i+1][j], by[i+1][j], bz[i+1][j]])
@@ -250,7 +250,24 @@ def makeMeshSphere(front, back):
 
             count += 6
 
-    # TODO bottom
+    # Bottom
+    bottom_i = bx.shape[0] - 1
+    for j in range(bx.shape[1]-1):
+        # Triangle 1
+        points.append([x[bottom_i][j], y[bottom_i][j], z[bottom_i][j]])
+        points.append([bx[bottom_i][j], by[bottom_i][j], bz[bottom_i][j]])
+        points.append([bx[bottom_i][j+1], by[bottom_i][j+1], bz[bottom_i][j+1]])
+
+        triangles.append([count, count+1, count+2])
+
+        # Triangle 2
+        points.append([x[bottom_i][j], y[bottom_i][j], z[bottom_i][j]])
+        points.append([x[bottom_i][j+1], y[bottom_i][j+1], z[bottom_i][j+1]])
+        points.append([bx[bottom_i][j+1], by[bottom_i][j+1], bz[bottom_i][j+1]])
+
+        triangles.append([count+3, count+4, count+5])
+
+        count += 6
 
     # Create the mesh
     model = mesh.Mesh(np.zeros(len(triangles), dtype=mesh.Mesh.dtype))
